@@ -1,6 +1,6 @@
 # NetSniff
 To download dependecies
-npm install
+\nnpm install
 the app may raise import error for android 
 then run,
 ionic cap open android let android open and then select sync gradle files from files menu
