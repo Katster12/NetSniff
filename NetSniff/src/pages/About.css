@@ -1,0 +1,180 @@
+/* ===================== Base Styles (Light Mode) ===================== */
+
+.contact-toolbar {
+  --background: #2563eb; /* Blue toolbar in light mode */
+}
+
+.contact-title {
+  font-weight: 600;
+  color: white; /* White text on blue toolbar for better contrast */
+}
+
+.contact-content {
+  --background: #f8fafc; /* Light background for light mode */
+  --color: #1e293b; /* Dark text in light mode */
+}
+
+.contact-container {
+  padding: 2rem;
+  text-align: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.contact-logo {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+  border-radius: 12px;
+}
+
+.contact-heading {
+  font-size: 1.75rem;
+  font-weight: bold;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  color: #1e293b;
+}
+
+.contact-heading-spaced {
+  margin-top: 3rem;
+}
+
+.contact-description {
+  max-width: 600px;
+  margin: 1rem auto;
+  line-height: 1.6;
+  color: #334155;
+}
+
+.contact-team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  max-width: 800px;
+  margin: 2rem auto;
+}
+
+.contact-member-card {
+  background-color: #e0f2fe; /* Light blue for light mode */
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.contact-member-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.avatar-container {
+  margin-bottom: 0.75rem;
+}
+
+.member-avatar {
+  width: 80px;
+  height: 80px;
+  --border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #bfdbfe;
+}
+
+.member-icon {
+  font-size: 64px;
+  color: #1e40af;
+}
+
+.member-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+  color: #1e293b;
+}
+
+.member-role {
+  font-size: 0.95rem;
+  margin: 0;
+  color: #475569;
+}
+
+/* ===================== Dark Mode ===================== */
+
+/* This targets both the system dark mode and our class-based approach */
+.dark-theme .contact-content,
+.dark-mode .contact-content,
+.dark .contact-content {
+  --background: #0f172a; /* Very dark blue for dark mode */
+  --color: #e2e8f0; /* Light gray text */
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+.dark-theme .contact-toolbar,
+.dark-mode .contact-toolbar,
+.dark .contact-toolbar {
+  --background: #1d4ed8; /* Slightly darker blue for dark mode */
+}
+
+.dark-theme .contact-heading,
+.dark-mode .contact-heading,
+.dark .contact-heading {
+  color: #f1f5f9; /* Very light gray/almost white */
+}
+
+.dark-theme .contact-description,
+.dark-mode .contact-description,
+.dark .contact-description {
+  color: #cbd5e1; /* Light gray for paragraphs */
+}
+
+.dark-theme .contact-member-card,
+.dark-mode .contact-member-card,
+.dark .contact-member-card {
+  background-color: #1e3a8a; /* Darker blue card for dark mode */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.dark-theme .member-avatar,
+.dark-mode .member-avatar,
+.dark .member-avatar {
+  background-color: #2d3748; /* Darker avatar background */
+}
+
+.dark-theme .member-icon,
+.dark-mode .member-icon,
+.dark .member-icon {
+  color: #60a5fa; /* Lighter blue icon */
+}
+
+.dark-theme .member-name,
+.dark-mode .member-name,
+.dark .member-name {
+  color: #f1f5f9; /* Light text for name */
+}
+
+.dark-theme .member-role,
+.dark-mode .member-role,
+.dark .member-role {
+  color: #cbd5e1; /* Light gray for role */
+}
+
+/* ===================== Responsive ===================== */
+
+@media (max-width: 640px) {
+  .contact-team-grid {
+    grid-template-columns: 1fr;
+    max-width: 300px;
+  }
+
+  .contact-container {
+    padding: 1.5rem 1rem;
+  }
+}

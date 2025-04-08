@@ -1,6 +1,24 @@
-import { IonApp, IonRouterOutlet, IonHeader, IonToolbar, IonTitle, IonContent, IonPage, setupIonicReact } from '@ionic/react';
+import { IonApp, 
+  IonRouterOutlet, 
+  IonHeader, 
+  IonToolbar, 
+  IonTitle, 
+  IonContent, 
+  IonPage, 
+  setupIonicReact, 
+  IonTabs,
+  IonTabBar,
+  IonTabButton,
+  IonIcon,
+  IonLabel,
+  IonButtons,
+  IonMenuButton,
+} from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import { Route, Redirect } from 'react-router-dom';
+import { home, moon, informationCircle, list, menu, mailOpen } from 'ionicons/icons';
+import { useState } from 'react';
+import { ChakraProvider } from '@chakra-ui/react';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -24,34 +42,81 @@ import './theme/variables.css';
 import { PacketProvider } from './context/PacketContext';
 import PacketList from './components/PacketList';
 import PacketDetailPage from './pages/PacketDetailPage';
+import AboutPage from './pages/About';
+import ContactPage from './pages/Contactus';
 
 setupIonicReact();
 
-const App: React.FC = () => (
-  <IonApp>
-    <IonReactRouter>
-      <PacketProvider>
-        <IonRouterOutlet>
-          <Route exact path="/home">
-            <IonPage>
-              <IonHeader>
-                <IonToolbar>
-                  <IonTitle>NetSniff</IonTitle>
-                </IonToolbar>
-              </IonHeader>
-              <IonContent>
-                <PacketList />
-              </IonContent>
-            </IonPage>
-          </Route>
-          <Route exact path="/packet/:id" component={PacketDetailPage} />
-          <Route exact path="/">
-            <Redirect to="/home" />
-          </Route>
-        </IonRouterOutlet>
-      </PacketProvider>
-    </IonReactRouter>
-  </IonApp>
-);
+const App: React.FC = () => {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode);
+    document.body.classList.toggle("dark", !isDarkMode);
+  };
+
+  return (
+    <IonApp>
+      <IonReactRouter>
+        <PacketProvider>
+          <IonTabs>
+            <IonRouterOutlet>
+              <Route exact path="/home">
+                <IonPage>
+                  <IonHeader>
+                    <IonToolbar>
+                      <IonButtons slot="start">
+                        <IonMenuButton>
+                          <IonIcon icon={menu} />
+                        </IonMenuButton>
+                      </IonButtons>
+                      <IonTitle>NetSniff</IonTitle>
+                    </IonToolbar>
+                  </IonHeader>
+                  <IonContent className="ion-padding">
+                    <PacketList />
+                  </IonContent>
+                </IonPage>
+              </Route>
+              <Route exact path="/about" component={AboutPage} />
+              <Route exact path="/contact" component={ContactPage} />
+              <Route exact path="/packet/:id" component={PacketDetailPage} />
+              <Route exact path="/">
+                <Redirect to="/home" />
+              </Route>
+            </IonRouterOutlet>
+
+            <IonTabBar slot="bottom">
+              <IonTabButton tab="home" href="/home">
+                <IonIcon icon={home} />
+                <IonLabel>Home</IonLabel>
+              </IonTabButton>
+
+              <IonTabButton tab="packets" href="/home">
+                <IonIcon icon={list} />
+                <IonLabel>Packets</IonLabel>
+              </IonTabButton>
+
+              <IonTabButton tab="Contactus" href="/contact">
+                <IonIcon icon={mailOpen} />
+                <IonLabel>Contactus</IonLabel>
+              </IonTabButton>
+
+              <IonTabButton tab="darkmode" onClick={toggleDarkMode}>
+                <IonIcon icon={moon} />
+                <IonLabel>Dark Mode</IonLabel>
+              </IonTabButton>
+
+              <IonTabButton tab="about" href="/about">
+                <IonIcon icon={informationCircle} />
+                <IonLabel>About</IonLabel>
+              </IonTabButton>
+            </IonTabBar>
+          </IonTabs>
+        </PacketProvider>
+      </IonReactRouter>
+    </IonApp>
+  );
+};
 
 export default App;
