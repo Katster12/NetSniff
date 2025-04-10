@@ -6,11 +6,17 @@ export class ToyVpnPluginAndroid implements ToyVpnPlugin {
         console.log('ToyVpnPluginAndroid constructor initialized');
     }
 
+    async requestVpnPermission(): Promise<{ status: string; message?: string }> {
+        console.log('ToyVpnPluginAndroid.requestVpnPermission called');
+        const capacitorWindow = window as any;
+        return capacitorWindow.Capacitor.Plugins.ToyVpn.requestVpnPermission();
+    }
+
     async startVpn(options?: { 
         serverAddress?: string; 
         serverPort?: string; 
         sharedSecret?: string;
-    }): Promise<{ status: string }> {
+    }): Promise<{ status: string; message?: string }> {
         console.log('ToyVpnPluginAndroid.startVpn called with options:', options);
         // This will call the native implementation through Capacitor's bridge
         const capacitorWindow = window as any;
@@ -27,6 +33,14 @@ export class ToyVpnPluginAndroid implements ToyVpnPlugin {
     async addListener(
         eventName: 'packetCaptured',
         listenerFunc: (packet: PacketData) => void
+    ): Promise<PluginListenerHandle>;
+    async addListener(
+        eventName: 'vpnStopped',
+        listenerFunc: () => void
+    ): Promise<PluginListenerHandle>;
+    async addListener(
+        eventName: 'packetCaptured' | 'vpnStopped',
+        listenerFunc: ((packet: PacketData) => void) | (() => void)
     ): Promise<PluginListenerHandle> {
         console.log('ToyVpnPluginAndroid.addListener called for event:', eventName);
         const capacitorWindow = window as any;

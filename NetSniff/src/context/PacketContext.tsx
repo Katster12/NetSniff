@@ -211,9 +211,9 @@ export const PacketProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   };
 
-  // Stop packet capture - extreme reliability approach
+  // Stop packet capture - gentle approach
   const stopCapture = async () => {
-    console.log("PacketContext: Attempting to stop VPN with extreme reliability strategy");
+    console.log("PacketContext: Attempting to stop VPN with gentle approach");
     setIsConnecting(true);
     setError(null);
     
@@ -225,78 +225,45 @@ export const PacketProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       
       console.log("PacketContext: Current state before stopping - isCapturing:", isCapturing, "isConnecting:", isConnecting);
       
-      // First immediately update UI state to prevent user interaction during stop process
+      // Update UI state to indicate stopping process has begun
       setIsCapturing(false);
-      console.log("PacketContext: Preemptively updated UI state to prevent further interaction");
       
-      // Make multiple stop attempts with increasing timeouts
-      const MAX_ATTEMPTS = 5;
-      let stopSuccess = false;
-      
-      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        console.log(`PacketContext: Making stop attempt ${attempt} of ${MAX_ATTEMPTS}`);
-        try {
-          // Use a timeout that increases with each attempt
-          const timeout = 2000 + (attempt * 1000);
-          const result = await Promise.race([
-            ToyVpn.stopVpn(),
-            new Promise<any>((_, reject) => 
-              setTimeout(() => reject(new Error(`VPN stop timed out after ${timeout}ms`)), timeout)
-            )
-          ]);
-          
-          console.log(`PacketContext: Stop attempt ${attempt} result:`, result);
-          
-          if (result?.status === "stopped") {
-            stopSuccess = true;
-            console.log("PacketContext: VPN successfully stopped");
-            break;
-          }
-        } catch (err) {
-          console.error(`PacketContext: Error in stop attempt ${attempt}:`, err);
-        }
+      // Single attempt with reasonable timeout
+      try {
+        console.log("PacketContext: Making a single, gentle stop attempt");
+        const result = await Promise.race([
+          ToyVpn.stopVpn(),
+          new Promise<any>((_, reject) => 
+            setTimeout(() => reject(new Error("VPN stop timed out after 5000ms")), 5000)
+          )
+        ]);
         
-        // Wait between attempts with increasing backoff
-        const waitTime = 500 * attempt;
-        console.log(`PacketContext: Waiting ${waitTime}ms before next attempt`);
-        await new Promise(resolve => setTimeout(resolve, waitTime));
-      }
-      
-      // Force kill as a last resort if still not stopped
-      if (!stopSuccess) {
-        console.log("PacketContext: All normal stop attempts failed, trying extreme measures");
-        try {
-          // Try one final time with a very aggressive approach
-          console.log('PacketContext: Making final emergency stop attempt');
-          await ToyVpn.stopVpn();
-          console.log('PacketContext: Final emergency stop attempt completed');
-          
-          // Force an app restart if available (not actually available in Capacitor)
-          // This code won't work but demonstrates the intent
-          console.log('PacketContext: Considering app restart if VPN persists');
-        } catch (err) {
-          console.error('PacketContext: Error in emergency stop attempt:', err);
+        console.log("PacketContext: Stop attempt result:", result);
+        
+        if (result?.status === "stopped") {
+          console.log("PacketContext: VPN successfully stopped");
         }
+      } catch (err) {
+        console.error("PacketContext: Error in stop attempt:", err);
+        // Don't throw here, just log the error
       }
       
-      // Clear any packets that might have been captured during shutdown
-      console.log("PacketContext: Clearing any lingering packets from state");
+      // Clear packets
+      console.log("PacketContext: Clearing packets from state");
       setPackets([]);
       
-      // Double check the UI state is updated
+      // Ensure UI state is updated
       setIsCapturing(false);
-      console.log("PacketContext: UI state forcefully updated to stopped");
       
     } catch (error: unknown) {
-      console.error('PacketContext: Catastrophic failure in stop VPN process:', error);
+      console.error('PacketContext: Failure in stop VPN process:', error);
       setError(error instanceof Error ? error.message : 'Failed to stop VPN');
       
       // Always ensure UI state is updated even in case of errors
       setIsCapturing(false);
-      console.log("PacketContext: UI state updated to stopped after error");
     } finally {
       setIsConnecting(false);
-      console.log("PacketContext: Stop capture operation fully completed");
+      console.log("PacketContext: Stop capture operation completed");
     }
   };
 

@@ -349,47 +349,17 @@ public class ToyVpnService extends VpnService {
     }
 
     private void cleanup() {
-        Log.d(TAG, "EXTREME VPN TERMINATION: Performing complete VPN cleanup with aggressive thread stopping");
+        Log.d(TAG, "Performing safe VPN cleanup");
         
-        // Immediately mark as not running to ensure no new packets are processed
+        // Mark as not running to ensure no new packets are processed
         running.set(false);
         
-        // CRITICAL: Immediately revoke network rights to stop packet flow
-        try {
-            Log.d(TAG, "EXTREME VPN TERMINATION: Revoking VPN network rights");
-            // Attempt to revoke VPN permissions to immediately stop packet capture
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                // Note: setVpnNetworkBlocked is not available in the current Android SDK version
-                // Instead, we'll use other termination methods below
-                Log.d(TAG, "EXTREME VPN TERMINATION: Using alternative methods to block VPN traffic");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to revoke VPN network rights", e);
-        }
-        
-        // CRITICAL FIRST STEP: Interrupt ALL threads in the process
-        Log.d(TAG, "EXTREME VPN TERMINATION: Aggressively interrupting ALL threads");
-        List<Thread> allThreads = new ArrayList<>();
-        Thread.getAllStackTraces().keySet().forEach(thread -> {
-            // Don't interrupt the main thread (our cleanup thread)
-            if (thread != Thread.currentThread()) {
-                allThreads.add(thread);
-                try {
-                    // Use maximum thread interruption
-                    thread.interrupt();
-                    Log.d(TAG, "EXTREME VPN TERMINATION: Interrupted thread: " + thread.getName());
-                } catch (Exception e) {
-                    Log.e(TAG, "Failed to interrupt thread: " + thread.getName(), e);
-                }
-            }
-        });
-        
-        // Force close the VPN interface to immediately stop packet flow
+        // Close the VPN interface properly
         if (vpnInterface != null) {
             try {
-                Log.d(TAG, "EXTREME VPN TERMINATION: Forcefully closing VPN interface");
+                Log.d(TAG, "Closing VPN interface");
                 vpnInterface.close();
-                Log.d(TAG, "EXTREME VPN TERMINATION: VPN interface closed successfully");
+                Log.d(TAG, "VPN interface closed successfully");
             } catch (IOException e) {
                 Log.e(TAG, "Error closing VPN interface", e);
             } finally {
@@ -397,80 +367,36 @@ public class ToyVpnService extends VpnService {
             }
         }
         
-        // Completely terminate executor service with immediate shutdown
+        // Safely shut down the executor service
         if (executorService != null && !executorService.isTerminated()) {
             try {
-                Log.d(TAG, "EXTREME VPN TERMINATION: Immediately terminating executor service");
-                // First try - immediate shutdown
-                List<Runnable> pendingTasks = executorService.shutdownNow();
-                Log.d(TAG, "EXTREME VPN TERMINATION: Cancelled " + pendingTasks.size() + " pending executor tasks");
+                Log.d(TAG, "Shutting down executor service");
+                // First try gentle shutdown
+                executorService.shutdown();
                 
-                try {
-                    // Very brief timeout for shutdown completion
-                    if (!executorService.awaitTermination(100, TimeUnit.MILLISECONDS)) {
-                        Log.w(TAG, "EXTREME VPN TERMINATION: Executor not responding, forcing termination again");
-                        executorService.shutdownNow();
-                        
-                        // Try with a slightly longer timeout
-                        if (!executorService.awaitTermination(200, TimeUnit.MILLISECONDS)) {
-                            Log.e(TAG, "EXTREME VPN TERMINATION: Executor service refuses to terminate after multiple attempts!");
-                            
-                            // Last resort - replace it with a terminated executor
-                            ExecutorService terminatedExecutor = Executors.newSingleThreadExecutor();
-                            terminatedExecutor.shutdownNow();
-                            executorService = terminatedExecutor;
-                            Log.d(TAG, "EXTREME VPN TERMINATION: Replaced executor with terminated instance");
-                        }
+                // Wait for tasks to complete with reasonable timeout
+                if (!executorService.awaitTermination(500, TimeUnit.MILLISECONDS)) {
+                    Log.w(TAG, "Executor not responding to gentle shutdown, using shutdownNow");
+                    List<Runnable> pendingTasks = executorService.shutdownNow();
+                    Log.d(TAG, "Cancelled " + pendingTasks.size() + " pending executor tasks");
+                    
+                    // Wait again with longer timeout
+                    if (!executorService.awaitTermination(500, TimeUnit.MILLISECONDS)) {
+                        Log.e(TAG, "Executor service did not terminate");
                     }
-                } catch (InterruptedException ie) {
-                    Log.e(TAG, "Interrupted while waiting for executor shutdown", ie);
-                    Thread.currentThread().interrupt();
-                    // One more try to force shutdown
-                    executorService.shutdownNow();
                 }
+            } catch (InterruptedException ie) {
+                Log.e(TAG, "Interrupted while waiting for executor shutdown", ie);
+                executorService.shutdownNow();
+                Thread.currentThread().interrupt();
             } catch (Exception e) {
                 Log.e(TAG, "Error during executor service shutdown", e);
             } finally {
-                // Nullify reference regardless of outcome
                 executorService = null;
             }
         }
         
-        // CRITICAL: Use Thread.stop() as a last resort for stubborn threads (requires appropriate security permissions)
-        // This is dangerous but necessary for threads that ignore interrupts
-        for (Thread thread : allThreads) {
-            if (thread.isAlive() && !thread.isInterrupted()) {
-                Log.w(TAG, "EXTREME VPN TERMINATION: Thread still alive after interruption: " + thread.getName());
-                try {
-                    // Try multiple interrupts first
-                    for (int i = 0; i < 3; i++) {
-                        thread.interrupt();
-                        // Small delay to let the interrupt take effect
-                        try { Thread.sleep(10); } catch (InterruptedException ignored) {}
-                    }
-                    
-                    // If thread is still alive, attempt to use more drastic measures
-                    if (thread.isAlive()) {
-                        Log.e(TAG, "EXTREME VPN TERMINATION: Thread " + thread.getName() + " refusing to die after multiple interrupts");
-                        // The following is a dangerous operation but may be necessary
-                        // for threads that are blocking and ignoring interrupts
-                        try {
-                            // Attempt to use reflection to access stop() method (use with extreme caution)
-                            Method stopMethod = Thread.class.getDeclaredMethod("stop");
-                            stopMethod.setAccessible(true);
-                            stopMethod.invoke(thread);
-                            Log.d(TAG, "EXTREME VPN TERMINATION: Used Thread.stop() on " + thread.getName());
-                        } catch (Exception e) {
-                            Log.e(TAG, "Could not forcefully stop thread " + thread.getName(), e);
-                        }
-                    }
-                } catch (Exception e) {
-                    Log.e(TAG, "Failed to handle stubborn thread: " + thread.getName(), e);
-                }
-            }
-        }
-        
-        // Aggressively clear all queues to prevent further packet processing
+        // Clear queues
         if (deviceToNetworkQueue != null) {
             try {
                 deviceToNetworkQueue.clear();
@@ -493,7 +419,7 @@ public class ToyVpnService extends VpnService {
         try {
             if (ToyVpnPlugin.instance != null) {
                 ToyVpnPlugin.notifyVpnStopped();
-                Log.d(TAG, "EXTREME VPN TERMINATION: Requested VPN stopped event via ToyVpnPlugin");
+                Log.d(TAG, "Notified JS layer that VPN is stopped");
             }
         } catch (Exception e) {
             Log.e(TAG, "Error notifying JS layer about VPN stop", e);

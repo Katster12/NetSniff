@@ -43,7 +43,7 @@ import { PacketProvider } from './context/PacketContext';
 import PacketList from './components/PacketList';
 import PacketDetailPage from './pages/PacketDetailPage';
 import AboutPage from './pages/About';
-import ContactPage from './pages/Contactus';
+import Infopage from './pages/Infopage';
 
 setupIonicReact();
 
@@ -51,8 +51,18 @@ const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-    document.body.classList.toggle("dark", !isDarkMode);
+    const newDarkMode = !isDarkMode;
+    setIsDarkMode(newDarkMode);
+    // Apply dark class to both body and root element (document.documentElement)
+    document.body.classList.toggle("dark", newDarkMode);
+    document.documentElement.classList.toggle("dark", newDarkMode);
+    
+    // Also set the class on root for our :root.dark selectors
+    if (newDarkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
   };
 
   return (
@@ -70,7 +80,7 @@ const App: React.FC = () => {
                           <IonIcon icon={menu} />
                         </IonMenuButton>
                       </IonButtons>
-                      <IonTitle>NetSniff</IonTitle>
+                      <IonTitle></IonTitle>
                     </IonToolbar>
                   </IonHeader>
                   <IonContent className="ion-padding">
@@ -79,7 +89,7 @@ const App: React.FC = () => {
                 </IonPage>
               </Route>
               <Route exact path="/about" component={AboutPage} />
-              <Route exact path="/contact" component={ContactPage} />
+              <Route exact path="/info" component={Infopage} />
               <Route exact path="/packet/:id" component={PacketDetailPage} />
               <Route exact path="/">
                 <Redirect to="/home" />
@@ -87,7 +97,7 @@ const App: React.FC = () => {
             </IonRouterOutlet>
 
             <IonTabBar slot="bottom">
-              <IonTabButton tab="home" href="/home">
+              <IonTabButton tab="info" href="/info">
                 <IonIcon icon={home} />
                 <IonLabel>Home</IonLabel>
               </IonTabButton>
@@ -97,19 +107,14 @@ const App: React.FC = () => {
                 <IonLabel>Packets</IonLabel>
               </IonTabButton>
 
-              <IonTabButton tab="Contactus" href="/contact">
-                <IonIcon icon={mailOpen} />
-                <IonLabel>Contactus</IonLabel>
-              </IonTabButton>
-
               <IonTabButton tab="darkmode" onClick={toggleDarkMode}>
                 <IonIcon icon={moon} />
                 <IonLabel>Dark Mode</IonLabel>
               </IonTabButton>
 
               <IonTabButton tab="about" href="/about">
-                <IonIcon icon={informationCircle} />
-                <IonLabel>About</IonLabel>
+                <IonIcon icon={mailOpen} />
+                <IonLabel>Contactus</IonLabel>
               </IonTabButton>
             </IonTabBar>
           </IonTabs>

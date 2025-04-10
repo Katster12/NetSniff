@@ -30,15 +30,17 @@ const PacketDetailPage: React.FC = () => {
 
   if (!packet) {
     return (
-      <IonPage>
+      <IonPage className="bg-white dark:bg-gray-900">
         <IonHeader>
-          <IonToolbar>
-            <IonTitle>Packet Not Found</IonTitle>
+          <IonToolbar className="dark:bg-gray-800">
+            <IonTitle className="font-medium text-center">Packet Not Found</IonTitle>
           </IonToolbar>
         </IonHeader>
-        <IonContent className="ion-padding">
-          <p>Packet with ID {id} not found.</p>
-          <IonButton onClick={() => history.goBack()}>Back to Home</IonButton>
+        <IonContent className="ion-padding bg-white dark:bg-gray-900">
+          <div className="flex flex-col items-center justify-center h-full p-8">
+            <p className="text-gray-800 dark:text-white text-lg mb-6 text-center">Packet with ID {id} not found.</p>
+            <IonButton onClick={() => history.goBack()} className="main-button w-full max-w-xs">Back to Home</IonButton>
+          </div>
         </IonContent>
       </IonPage>
     );
@@ -49,52 +51,52 @@ const PacketDetailPage: React.FC = () => {
   };
 
   return (
-    <IonPage>
+    <IonPage className="bg-white dark:bg-gray-900">
       <IonHeader>
-        <IonToolbar>
-          <IonButton slot="start" onClick={() => history.goBack()}>
+        <IonToolbar className="dark:bg-gray-800">
+          <IonButton slot="start" onClick={() => history.goBack()} fill="clear" className="back-button">
             <IonIcon icon="arrow-back" />
           </IonButton>
-          <IonTitle>Packet Details</IonTitle>
+          <IonTitle className="font-medium text-center">Packet Details</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
-        <IonSegment value={selectedSegment} onIonChange={handleSegmentChange}>
-          <IonSegmentButton value="info">
-            <IonLabel>Packet Info</IonLabel>
+      <IonContent className="ion-padding bg-white dark:bg-gray-900">
+        <IonSegment value={selectedSegment} onIonChange={handleSegmentChange} className="dark:bg-gray-800 dark:text-white segment-container">
+          <IonSegmentButton value="info" className="segment-button">
+            <IonLabel className="font-medium">Packet Info</IonLabel>
           </IonSegmentButton>
-          <IonSegmentButton value="data">
-            <IonLabel>Data</IonLabel>
+          <IonSegmentButton value="data" className="segment-button">
+            <IonLabel className="font-medium">Data</IonLabel>
           </IonSegmentButton>
         </IonSegment>
 
         {selectedSegment === 'info' && (
-          <IonCard>
+          <IonCard className="detail-card dark:bg-gray-800 dark:text-white shadow-lg rounded-xl">
             <IonCardContent>
-              <IonGrid>
-                <IonRow>
-                  <IonCol size="4"><strong>Timestamp:</strong></IonCol>
-                  <IonCol size="8">{new Date(packet.timestamp).toLocaleString()}</IonCol>
+              <IonGrid className="p-2">
+                <IonRow className="py-2 border-b border-gray-200 dark:border-gray-700">
+                  <IonCol size="4" className="text-gray-700 dark:text-gray-200 font-semibold">Timestamp:</IonCol>
+                  <IonCol size="8" className="text-gray-800 dark:text-white">{new Date(packet.timestamp).toLocaleString()}</IonCol>
                 </IonRow>
-                <IonRow>
-                  <IonCol size="4"><strong>Source:</strong></IonCol>
-                  <IonCol size="8">{packet.source}</IonCol>
+                <IonRow className="py-2 border-b border-gray-200 dark:border-gray-700">
+                  <IonCol size="4" className="text-gray-700 dark:text-gray-200 font-semibold">Source:</IonCol>
+                  <IonCol size="8" className="text-gray-800 dark:text-white">{packet.source}</IonCol>
                 </IonRow>
-                <IonRow>
-                  <IonCol size="4"><strong>Destination:</strong></IonCol>
-                  <IonCol size="8">{packet.destination}</IonCol>
+                <IonRow className="py-2 border-b border-gray-200 dark:border-gray-700">
+                  <IonCol size="4" className="text-gray-700 dark:text-gray-200 font-semibold">Destination:</IonCol>
+                  <IonCol size="8" className="text-gray-800 dark:text-white">{packet.destination}</IonCol>
                 </IonRow>
-                <IonRow>
-                  <IonCol size="4"><strong>Protocol:</strong></IonCol>
-                  <IonCol size="8">{packet.protocol}</IonCol>
+                <IonRow className="py-2 border-b border-gray-200 dark:border-gray-700">
+                  <IonCol size="4" className="text-gray-700 dark:text-gray-200 font-semibold">Protocol:</IonCol>
+                  <IonCol size="8" className="text-gray-800 dark:text-white">{packet.protocol}</IonCol>
                 </IonRow>
-                <IonRow>
-                  <IonCol size="4"><strong>Direction:</strong></IonCol>
-                  <IonCol size="8">{packet.direction}</IonCol>
+                <IonRow className="py-2 border-b border-gray-200 dark:border-gray-700">
+                  <IonCol size="4" className="text-gray-700 dark:text-gray-200 font-semibold">Direction:</IonCol>
+                  <IonCol size="8" className="text-gray-800 dark:text-white">{packet.direction}</IonCol>
                 </IonRow>
-                <IonRow>
-                  <IonCol size="4"><strong>Size:</strong></IonCol>
-                  <IonCol size="8">{packet.size} bytes</IonCol>
+                <IonRow className="py-2">
+                  <IonCol size="4" className="text-gray-700 dark:text-gray-200 font-semibold">Size:</IonCol>
+                  <IonCol size="8" className="text-gray-800 dark:text-white">{packet.size} bytes</IonCol>
                 </IonRow>
               </IonGrid>
             </IonCardContent>
@@ -102,9 +104,9 @@ const PacketDetailPage: React.FC = () => {
         )}
 
         {selectedSegment === 'data' && (
-          <IonCard>
+          <IonCard className="detail-card dark:bg-gray-800 dark:text-white shadow-lg rounded-xl">
             <IonCardContent>
-              <pre className="packet-data">{packet.payload}</pre>
+              <pre className="packet-data bg-gray-100 dark:bg-gray-700 p-5 rounded-lg text-gray-800 dark:text-white overflow-auto font-mono text-sm leading-relaxed">{packet.payload}</pre>
             </IonCardContent>
           </IonCard>
         )}

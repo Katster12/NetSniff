@@ -211,9 +211,9 @@ public class ToyVpnPlugin extends Plugin {
     @PluginMethod
     public void stopVpn(PluginCall call) {
         try {
-            Log.d(TAG, "EXTREME VPN TERMINATION: Stopping VPN service with maximum force");
+            Log.d(TAG, "Stopping VPN service safely");
             
-            // First immediately notify frontend that VPN is stopping - this will clear UI state
+            // First notify frontend that VPN is stopping to update UI state
             notifyListeners("vpnStopping", new JSObject());
             
             // Save the plugin call to resolve later
@@ -223,151 +223,76 @@ public class ToyVpnPlugin extends Plugin {
             Thread stopThread = new Thread(() -> {
                 boolean stoppedSuccessfully = false;
                 int attempts = 0;
-                final int MAX_ATTEMPTS = 3;  // Reduced for faster response
-                
-                // First immediately try to kill any VPN service threads
-                try {
-                    Log.d(TAG, "EXTREME VPN TERMINATION: Pre-emptively identifying and interrupting VPN threads");
-                    Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
-                    for (Thread thread : threadSet) {
-                        if (thread.getName().contains("VPN") || 
-                            thread.getName().contains("Toy") || 
-                            thread.getName().contains("network") || 
-                            thread.getName().contains("packet")) {
-                            
-                            Log.d(TAG, "EXTREME VPN TERMINATION: Interrupting thread: " + thread.getName());
-                            thread.interrupt();
-                        }
-                    }
-                } catch (Exception e) {
-                    Log.e(TAG, "Error interrupting VPN threads", e);
-                }
+                final int MAX_ATTEMPTS = 2;  // Reduced number of attempts
                 
                 while (!stoppedSuccessfully && attempts < MAX_ATTEMPTS) {
                     attempts++;
-                    Log.d(TAG, "EXTREME VPN TERMINATION: Attempt " + attempts + " to stop VPN service");
+                    Log.d(TAG, "Attempt " + attempts + " to stop VPN service");
                     
-                    // First, try to send the disconnect action aggressively with multiple approaches
+                    // First, try to send the disconnect action
                     try {
                         // Application context approach
                         Context appContext = getContext().getApplicationContext();
                         Intent intent = new Intent(appContext, ToyVpnService.class);
                         intent.setAction(ToyVpnService.ACTION_DISCONNECT);
                         appContext.startService(intent);
-                        Log.d(TAG, "EXTREME VPN TERMINATION: Sent disconnect action via application context");
-                        
-                        // Direct context approach
-                        intent = new Intent(getContext(), ToyVpnService.class);
-                        intent.setAction(ToyVpnService.ACTION_DISCONNECT);
-                        getContext().startService(intent);
-                        Log.d(TAG, "EXTREME VPN TERMINATION: Sent disconnect action via direct context");
-                        
-                        // Activity context approach if available
-                        if (getActivity() != null) {
-                            intent = new Intent(getActivity(), ToyVpnService.class);
-                            intent.setAction(ToyVpnService.ACTION_DISCONNECT);
-                            getActivity().startService(intent);
-                            Log.d(TAG, "EXTREME VPN TERMINATION: Sent disconnect action via activity context");
-                        }
+                        Log.d(TAG, "Sent disconnect action via application context");
                     } catch (Exception e) {
                         Log.e(TAG, "Error sending disconnect action", e);
                     }
                     
-                    // Shorter wait between actions for faster response
-                    try { Thread.sleep(100); } catch (InterruptedException e) { /* ignore */ }
+                    // Wait a moment for the service to process the disconnect action
+                    try { Thread.sleep(300); } catch (InterruptedException e) { /* ignore */ }
                     
-                    // Immediate stop attempts with multiple approaches
+                    // Now try to stop the service normally
                     try {
                         // Application context stop
                         Context appContext = getContext().getApplicationContext();
                         Intent intent = new Intent(appContext, ToyVpnService.class);
                         boolean stopped = appContext.stopService(intent);
-                        Log.d(TAG, "EXTREME VPN TERMINATION: App context stopService result: " + stopped);
+                        Log.d(TAG, "App context stopService result: " + stopped);
                         if (stopped) stoppedSuccessfully = true;
-                        
-                        // Direct context stop
-                        intent = new Intent(getContext(), ToyVpnService.class);
-                        stopped = getContext().stopService(intent);
-                        Log.d(TAG, "EXTREME VPN TERMINATION: Direct stopService result: " + stopped);
-                        if (stopped) stoppedSuccessfully = true;
-                        
-                        // Activity context stop if available
-                        if (getActivity() != null) {
-                            intent = new Intent(getActivity(), ToyVpnService.class);
-                            stopped = getActivity().stopService(intent);
-                            Log.d(TAG, "EXTREME VPN TERMINATION: Activity stopService result: " + stopped);
-                            if (stopped) stoppedSuccessfully = true;
-                        }
                     } catch (Exception e) {
                         Log.e(TAG, "Error stopping service directly", e);
                     }
                     
-                    // Try to directly find and kill the service
+                    // Wait between attempts
+                    try { Thread.sleep(500); } catch (InterruptedException e) { /* ignore */ }
+                }
+                
+                // If still not stopped successfully, try a more direct approach
+                if (!stoppedSuccessfully) {
                     try {
+                        Log.d(TAG, "Using alternative method to stop VPN service");
+                        
+                        // Check if the service is still running
                         ActivityManager am = (ActivityManager) getContext().getSystemService(Context.ACTIVITY_SERVICE);
                         List<ActivityManager.RunningServiceInfo> services = am.getRunningServices(Integer.MAX_VALUE);
                         
                         for (ActivityManager.RunningServiceInfo service : services) {
                             if (ToyVpnService.class.getName().equals(service.service.getClassName())) {
-                                Log.d(TAG, "EXTREME VPN TERMINATION: Found running VPN service with pid: " + service.pid);
-                                // Try to forcefully stop it
-                                try {
-                                    Log.d(TAG, "EXTREME VPN TERMINATION: Attempting to kill process with pid: " + service.pid);
-                                    android.os.Process.killProcess(service.pid);
-                                    // Add a small delay to let the system process the kill command
-                                    Thread.sleep(200);
-                                } catch (Exception e) {
-                                    Log.e(TAG, "Error killing process: " + service.pid, e);
+                                Log.d(TAG, "Found running VPN service - stopping it");
+                                
+                                // Try with activity context
+                                if (getActivity() != null) {
+                                    Intent intent = new Intent(getActivity(), ToyVpnService.class);
+                                    boolean stopped = getActivity().stopService(intent);
+                                    Log.d(TAG, "Activity stopService result: " + stopped);
+                                    if (stopped) stoppedSuccessfully = true;
                                 }
-                                stoppedSuccessfully = true;
+                                
                                 break;
                             }
                         }
                     } catch (Exception e) {
-                        Log.e(TAG, "Error killing service process", e);
+                        Log.e(TAG, "Error in alternative stop method", e);
                     }
-                    
-                    // Shorter wait between attempts for faster response
-                    try { Thread.sleep(200); } catch (InterruptedException e) { /* ignore */ }
                 }
                 
-                // Final nuclear option - try to forcefully stop anything VPN related
-                try {
-                    Log.d(TAG, "EXTREME VPN TERMINATION: Executing nuclear cleanup option");
-                    
-                    // Forcefully stop any services with our package name
-                    ActivityManager am = (ActivityManager) getContext().getSystemService(Context.ACTIVITY_SERVICE);
-                    List<ActivityManager.RunningServiceInfo> services = am.getRunningServices(Integer.MAX_VALUE);
-                    
-                    for (ActivityManager.RunningServiceInfo service : services) {
-                        String className = service.service.getClassName();
-                        if (className.contains("netsniff") || className.contains("vpn") || className.contains("toy")) {
-                            Log.d(TAG, "EXTREME VPN TERMINATION: Found potentially related service: " + className + " with pid: " + service.pid);
-                            try {
-                                android.os.Process.killProcess(service.pid);
-                                Log.d(TAG, "EXTREME VPN TERMINATION: Killed process with pid: " + service.pid);
-                            } catch (Exception e) {
-                                Log.e(TAG, "Failed to kill process with pid: " + service.pid, e);
-                            }
-                        }
-                    }
-                    
-                    // Create a special intent to explicitly stop and kill the VPN
-                    final Intent killIntent = new Intent(getContext(), ToyVpnService.class);
-                    killIntent.setAction("com.netsniff.app.KILL"); // Special action to perform final cleanup
-                    getContext().startService(killIntent);
-                    getContext().stopService(killIntent);
-                    
-                } catch (Exception e) {
-                    Log.e(TAG, "Error in nuclear cleanup option", e);
-                }
-                
-                // Now we'll always tell the UI that VPN is stopped, regardless of whether it actually stopped
-                // Create final copies of the variables for use in the lambda
+                // Create final copy of the variable for use in the lambda
                 final boolean finalStoppedSuccessfully = stoppedSuccessfully;
-                final int finalAttempts = attempts;
                 
-                // Force a small delay to ensure all cleanup operations have had time to execute
+                // Force a small delay to ensure all operations have had time to execute
                 try { Thread.sleep(300); } catch (InterruptedException e) { /* ignore */ }
                 
                 // Reset the vpnServiceIntent to ensure it's not reused
@@ -376,23 +301,16 @@ public class ToyVpnPlugin extends Plugin {
                 // Use bridge.executeOnMainThread to safely call UI methods
                 getBridge().executeOnMainThread(() -> {
                     try {
-                        Log.d(TAG, "EXTREME VPN TERMINATION: Executing final cleanup on main thread");
-                        
-                        // Make one final attempt to stop the service from the main thread
-                        if (getActivity() != null) {
-                            Intent finalIntent = new Intent(getActivity(), ToyVpnService.class);
-                            getActivity().stopService(finalIntent);
-                        }
+                        Log.d(TAG, "Executing final cleanup on main thread");
                         
                         // Explicitly notify the UI that VPN has stopped
                         notifyListeners("vpnStopped", new JSObject());
-                        Log.d(TAG, "EXTREME VPN TERMINATION: Notified listeners that VPN is stopped");
+                        Log.d(TAG, "Notified listeners that VPN is stopped");
                         
                         // Resolve the plugin call on the main thread
                         JSObject ret = new JSObject();
                         ret.put("status", "stopped");
                         ret.put("success", finalStoppedSuccessfully);
-                        ret.put("attempts", finalAttempts);
                         call.resolve(ret);
                     } catch (Exception e) {
                         Log.e(TAG, "Error in final VPN termination steps", e);
@@ -456,9 +374,9 @@ public class ToyVpnPlugin extends Plugin {
      * Used when the app is being destroyed and we need to ensure cleanup
      */
     public void directStopVpn() {
-        Log.d(TAG, "EXTREME VPN TERMINATION: directStopVpn called (without plugin call)");
+        Log.d(TAG, "directStopVpn called (without plugin call)");
         
-        // First immediately notify frontend that VPN is stopping - this will clear UI state
+        // First notify frontend that VPN is stopping
         try {
             notifyListeners("vpnStopping", new JSObject());
         } catch (Exception e) {
@@ -469,112 +387,57 @@ public class ToyVpnPlugin extends Plugin {
         Thread stopThread = new Thread(() -> {
             boolean stoppedSuccessfully = false;
             
-            // First immediately try to kill any VPN service threads
-            try {
-                Log.d(TAG, "EXTREME VPN TERMINATION: Pre-emptively identifying and interrupting VPN threads");
-                Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
-                for (Thread thread : threadSet) {
-                    if (thread.getName().contains("VPN") || 
-                        thread.getName().contains("Toy") || 
-                        thread.getName().contains("network") || 
-                        thread.getName().contains("packet")) {
-                        
-                        Log.d(TAG, "EXTREME VPN TERMINATION: Interrupting thread: " + thread.getName());
-                        thread.interrupt();
-                    }
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error interrupting VPN threads", e);
-            }
+            // First approach: send disconnect action in a safe manner
             
-            // Send disconnect action aggressively with multiple approaches
             try {
                 // Application context approach
                 Context appContext = getContext().getApplicationContext();
                 Intent intent = new Intent(appContext, ToyVpnService.class);
                 intent.setAction(ToyVpnService.ACTION_DISCONNECT);
                 appContext.startService(intent);
-                Log.d(TAG, "EXTREME VPN TERMINATION: Sent disconnect action via application context");
+                Log.d(TAG, "Sent disconnect action via application context");
                 
-                // Direct context approach
-                intent = new Intent(getContext(), ToyVpnService.class);
-                intent.setAction(ToyVpnService.ACTION_DISCONNECT);
-                getContext().startService(intent);
-                Log.d(TAG, "EXTREME VPN TERMINATION: Sent disconnect action via direct context");
-                
-                // Activity context approach if available
-                if (getActivity() != null) {
-                    intent = new Intent(getActivity(), ToyVpnService.class);
-                    intent.setAction(ToyVpnService.ACTION_DISCONNECT);
-                    getActivity().startService(intent);
-                    Log.d(TAG, "EXTREME VPN TERMINATION: Sent disconnect action via activity context");
-                }
+                // Wait for the service to process the disconnect action
+                try { Thread.sleep(300); } catch (InterruptedException e) { /* ignore */ }
             } catch (Exception e) {
                 Log.e(TAG, "Error sending disconnect action", e);
             }
             
-            // Give the disconnect action a moment to take effect
-            try { Thread.sleep(100); } catch (InterruptedException e) { /* ignore */ }
-            
-            // Immediate stop attempts with multiple approaches
+            // Gently stop the service
             try {
                 // Application context stop
                 Context appContext = getContext().getApplicationContext();
                 Intent intent = new Intent(appContext, ToyVpnService.class);
                 boolean stopped = appContext.stopService(intent);
-                Log.d(TAG, "EXTREME VPN TERMINATION: App context stopService result: " + stopped);
+                Log.d(TAG, "App context stopService result: " + stopped);
                 if (stopped) stoppedSuccessfully = true;
                 
-                // Direct context stop
-                intent = new Intent(getContext(), ToyVpnService.class);
-                stopped = getContext().stopService(intent);
-                Log.d(TAG, "EXTREME VPN TERMINATION: Direct stopService result: " + stopped);
-                if (stopped) stoppedSuccessfully = true;
-                
-                // Activity context stop if available
-                if (getActivity() != null) {
-                    intent = new Intent(getActivity(), ToyVpnService.class);
-                    stopped = getActivity().stopService(intent);
-                    Log.d(TAG, "EXTREME VPN TERMINATION: Activity stopService result: " + stopped);
-                    if (stopped) stoppedSuccessfully = true;
-                }
+                // Wait a moment to ensure the service is stopping
+                try { Thread.sleep(200); } catch (InterruptedException e) { /* ignore */ }
             } catch (Exception e) {
                 Log.e(TAG, "Error stopping service directly", e);
             }
             
-            // Try to directly find and kill the service
-            try {
-                ActivityManager am = (ActivityManager) getContext().getSystemService(Context.ACTIVITY_SERVICE);
-                List<ActivityManager.RunningServiceInfo> services = am.getRunningServices(Integer.MAX_VALUE);
-                
-                for (ActivityManager.RunningServiceInfo service : services) {
-                    if (ToyVpnService.class.getName().equals(service.service.getClassName())) {
-                        Log.d(TAG, "EXTREME VPN TERMINATION: Found running VPN service with pid: " + service.pid);
-                        // Try to forcefully stop it
-                        try {
-                            Log.d(TAG, "EXTREME VPN TERMINATION: Attempting to kill process with pid: " + service.pid);
-                            android.os.Process.killProcess(service.pid);
-                            // Add a small delay to let the system process the kill command
-                            Thread.sleep(200);
-                        } catch (Exception e) {
-                            Log.e(TAG, "Error killing process: " + service.pid, e);
-                        }
-                        stoppedSuccessfully = true;
-                        break;
-                    }
+            // Try with activity context if needed
+            if (!stoppedSuccessfully && getActivity() != null) {
+                try {
+                    Intent intent = new Intent(getActivity(), ToyVpnService.class);
+                    boolean stopped = getActivity().stopService(intent);
+                    Log.d(TAG, "Activity stopService result: " + stopped);
+                    if (stopped) stoppedSuccessfully = true;
+                } catch (Exception e) {
+                    Log.e(TAG, "Error stopping service via activity", e);
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "Error killing service process", e);
             }
             
-            // Reset the vpnServiceIntent to ensure it's not reused
+            // Reset the vpnServiceIntent reference
             vpnServiceIntent = null;
             
             // Notify that VPN is stopped
             getBridge().executeOnMainThread(() -> {
                 try {
                     notifyListeners("vpnStopped", new JSObject());
-                    Log.d(TAG, "EXTREME VPN TERMINATION: Sent vpnStopped event to JS layer from direct method");
+                    Log.d(TAG, "Sent vpnStopped event to JS layer from direct method");
                 } catch (Exception e) {
                     Log.e(TAG, "Error sending vpnStopped event from direct method", e);
                 }
