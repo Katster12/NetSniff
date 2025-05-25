@@ -1,7 +1,9 @@
-<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/512px-YouTube_full-color_icon_%282017%29.svg.png" alt="" align="center" width="225" height="150"><h1 align="center">NetSniff</h1>
-<p align="center"><a href="#project-description">Project Description</a> - <a href="#key-features">Key Features</a> - <a href="#technology-stack">Tech Stack</a></p>
+<div align="center">
+  <img src="https://github.com/TrashCan-Design/NetSniff/blob/main/NetSniff/public/logo.png" alt="NetSniff Logo" width="225" height="150">
+  <h1>NetSniff</h1>
 
-<img src="https://repolaunch.vercel.app/assets/img/yt.webp" alt="" align="center" width="auto" height="auto">
+<img src="https://github.com/TrashCan-Design/NetSniff/blob/main/NetSniff/public/assets/WhatsApp%20Image%202025-05-25%20at%209.30.22%20PM.jpeg" alt="" align="center" width="auto" height="auto">
+</div>
 
 ## Project Description
 
@@ -17,60 +19,41 @@ Packet Capture and Analysis Process
 
 As traffic is routed through the virtual VPN interface, the application captures packets in real time. These packets are then analyzed using native Android code written in Java for optimal performance. During this process, NetSniff extracts essential metadata such as source and destination IP addresses, packet size, protocol type (e.g., TCP, UDP, ICMP, HTTP, DNS), traffic direction, and timestamps. The captured data is then transferred to the Ionic React frontend via a Capacitor plugin bridge, allowing real-time display and interaction within the app interface.
 
-## Key Components
+## 🛠️ Installation & Run Instructions
+📦 Install Dependencies
 
-UserForm
+    npm install
 
-```javascript
-const UserForm = () => {
-  const [name, setName] = useState('');
+This installs all required Node.js packages.
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    alert(`Hello, ${name}`);
-  };
+⚠️ Fix Android Import Errors
 
-  return (
-    <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Enter your name"
-      />
-      <button type="submit">Submit</button>
-    </form>
-  );
-};
+If you face import errors for Android, follow these steps:
 
-export default UserForm;
+Open the Android project:
 
-```
+    ionic cap open android
 
-  
-ToggleMessage
+In Android Studio, go to the File menu and click:
 
-```javascript
-const ToggleMessage = () => {
-  const [isVisible, setIsVisible] = useState(false);
+<b>File → Sync Project with Gradle Files</b>
 
-  return (
-    
-<div>
-      <button onClick={() => setIsVisible(!isVisible)}>
-        {isVisible ? 'Hide' : 'Show'} Message
-      </button>
-      {isVisible && 
-<p>This is a toggled message!</p>
-}
-    </div>
+🔁 Sync & Build the App
 
-  );
-};
+    ionic cap sync android
 
-export default ToggleMessage;
+    ionic build
 
-```
+📱 Run the App on a Device
+
+To run the app:
+
+    ionic cap run android --external
+
+🔹 Omit --external if you're not using an external physical device.
+
+
+
 
 ## Key Features
 
